@@ -1,0 +1,87 @@
+require(Amelia)
+imputed_test2<-amelia(test2[,-3],m=1)
+test_fixed<-imputed_test2$imputations[[1]]
+
+predictions<-rep(0,418)
+predictions[svm_pred>.65]=1
+Submission_svm<-cbind(test2$PassengerId,predictions)
+> colnames(svm_submission)<-c("PassengerId","Survived")
+write.csv(Submission_svm, "Submission_svm2.csv", row.names=F)
+# svm maybe not performing very well 
+
+tune.out=tune(svm ,Survived~.,data=hadoop ,scale=T, kernel ="linear",ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10) ))
+summary(tune.out)
+bestmod =tune.out$best.model
+
+
+> tune.out=tune(svm ,Survived~.,data=hadoop ,scale=TRUE, kernel ="linear",ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10) ))
+> bestmod =tune.out$best.model
+> svm_pred<-predict(bestmod,test_fixed)
+> head(svm_pred)
+
+
+> tune.out=tune(svm ,Survived~.,data=hadoop ,scale=TRUE, kernel ="polynomial",ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10) ))
+bestmod =tune.out$best.model
+svm_pred<-predict(bestmod,test_fixed)
+svm_submission<-cbind(test2$PassengerId,svm_pred)
+colnames(svm_submission)<-c("PassengerId","Survived")
+svm_submission[,2]<-svm_submission[,2]-rep(1,418)
+write.csv(svm_submission, "svm.csv", row.names=F)
+
+tune.out=tune(svm,Survived~., data=hadoop, kernel="radial",  ranges =list(cost=c(0.001 ,  0.1, 1,5),gamma=c(.5,1,2,4)))
+
+knn.pred<-knn(hadoop[,-2],test_fixed,hadoop[,2],k=6)
+knn.tune<-tune(knn,hadoop[,-2],test_fixed,hadoop[,2],ranges=list(k=c(1,2,4,6,10)))
+knn_submission<-cbind(test2$PassengerId,knn.pred)
+colnames(knn_submission)<-c("PassengerId","Survived")
+knn_submission[,2]<-knn_submission[,2]-rep(1,418)
+write.csv(knn_submission, "knn.csv", row.names=F)
+
+
+require(tree)
+tree.pred<-tree(Survived~.,data=hadoop)
+tree.results<-predict(tree.pred,test_fixed,type="response")
+tree.results<-predict(tree.pred,test_fixed,type="class")
+head(tree.results)
+tree_submission<-cbind(test2$PassengerId,tree.results)
+colnames(tree_submission)<-c("PassengerId","Survived")
+tree_submission[,2]<-tree_submission[,2]-rep(1,418)
+write.csv(tree_submission, "tree.csv", row.names=F)
+
+bag.titanic=randomForest(Survived~.,data=hadoop, importance =TRUE)
+bagging_predictions<-predict(bag.titanic,test_fixed)
+bag_submission<-cbind(test2$PassengerId,bagging_predictions)
+colnames(bag_submission)<-c("PassengerId","Survived")
+bag_submission[,2]<-bag_submission[,2]-rep(1,418)
+write.csv(bag_submission, "bagging.csv", row.names=F)
+
+boost=gbm.fit(hadoop[,-2],hadoop[,2], distribution="bernoulli",n.trees =5000 , interaction.depth =4)
+boost_predictions<-predict(boost,test_fixed,n.trees=5000,type="response")
+cforest_submission<-cbind(test2$PassengerId,submit)
+colnames(cforest_submission)<-c("PassengerId","Survived")
+boost_submission[,2]<-boost_submission[,2]-rep(1,418)
+write.csv(cforest_submission, "cforest.csv", row.names=F)
+
+boost.tune=tune(gbm.fit,hadoop[,-2],hadoop[,2], distribution="bernoulli",range=list(n.trees=c(1,5000) , interaction.depth=c(1,2,3,4,5)))
+
+
+train<-sample(891,500)
+hadoop.train<-hadoop[train,]
+hadoop.test<-hadoop[-train,]
+boost=gbm.fit(hadoop.train[,-2],hadoop.train[,2], distribution="bernoulli",n.trees =5000 , interaction.depth =5, verbose=F)
+boost_predictions<-predict(boost,hadoop.test[,-2],n.trees=5000,type="response")
+boost_predictions<-round(boost_predictions)
+(391-abs(sum(boost_predictions-hadoop.test[,2])))/391
+
+w/ interaction depth=10=> .97
+w/ interaction depth=4 = .982
+
+Sex                 Sex 38.0633064
+Age                 Age 12.6025073
+Pclass           Pclass  9.9403027
+Fare               Fare  8.6586173
+Cabin 
+
+
+
+
