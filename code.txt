@@ -71,16 +71,9 @@ hadoop.test<-hadoop[-train,]
 boost=gbm.fit(hadoop.train[,-2],hadoop.train[,2], distribution="bernoulli",n.trees =5000 , interaction.depth =5, verbose=F)
 boost_predictions<-predict(boost,hadoop.test[,-2],n.trees=5000,type="response")
 boost_predictions<-round(boost_predictions)
-(391-abs(sum(boost_predictions-hadoop.test[,2])))/391
 
-w/ interaction depth=10=> .97
-w/ interaction depth=4 = .982
 
-Sex                 Sex 38.0633064
-Age                 Age 12.6025073
-Pclass           Pclass  9.9403027
-Fare               Fare  8.6586173
-Cabin 
+
 
 
 
