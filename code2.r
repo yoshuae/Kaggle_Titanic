@@ -41,7 +41,6 @@ summary(test)
 
 boost_predictions<-predict(boost,test,n.trees=5000,type="response",verbose=F)
 head(boost_predictions)
-boost_submission<-cbind(test2$PassengerId,round(boost_predictions)
-)
+boost_submission<-cbind(test2$PassengerId,round(boost_predictions))
 
 
